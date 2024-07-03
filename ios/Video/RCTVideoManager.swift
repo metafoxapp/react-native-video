@@ -99,6 +99,14 @@ class RCTVideoManager: RCTViewManager {
             videoView?.setFullscreen(fullScreen)
         })
     }
+        
+    @objc(getCurrentFrame:resolver:rejecter:)
+    func getCurrentFrame(reactTag: NSNumber, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
+        performOnVideoView(withReactTag: reactTag, callback: { videoView in
+            videoView?.getCurrentFrame(resolve: resolve, reject: reject)
+        })
+    }
+    
 
     override class func requiresMainQueueSetup() -> Bool {
         return true

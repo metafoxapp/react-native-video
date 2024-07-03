@@ -70,6 +70,13 @@ class VideoManagerModule(reactContext: ReactApplicationContext?) : ReactContextB
     }
 
     @ReactMethod
+    fun getCurrentFrame(reactTag: Int, promise: Promise) {
+        performOnPlayerView(reactTag) {
+            it?.getCurrentFrame(promise)
+        }
+    }
+
+    @ReactMethod
     fun setFullScreen(fullScreen: Boolean, reactTag: Int) {
         performOnPlayerView(reactTag) {
             it?.setFullscreen(fullScreen)

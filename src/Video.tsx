@@ -44,12 +44,11 @@ import {
   resolveAssetSourceForVideo,
 } from './utils';
 import {VideoManager} from './specs/VideoNativeComponent';
-import {
-  type OnLoadData,
-  type OnTextTracksData,
-  type OnReceiveAdEventData,
-  type ReactVideoProps,
-  ViewType,
+import type {
+  OnLoadData,
+  OnTextTracksData,
+  OnReceiveAdEventData,
+  ReactVideoProps,
 } from './types';
 
 export type VideoSaveData = {
@@ -85,9 +84,6 @@ const Video = forwardRef<VideoRef, ReactVideoProps>(
       selectedVideoTrack,
       selectedAudioTrack,
       selectedTextTrack,
-      useTextureView,
-      useSecureView,
-      viewType,
       onLoadStart,
       onLoad,
       onError,
@@ -547,6 +543,11 @@ const Video = forwardRef<VideoRef, ReactVideoProps>(
       [drm, useExternalGetLicense],
     );
 
+    const getCurrentFrame = useCallback(() => {
+      return VideoManager.getCurrentFrame(getReactTag(nativeRef));
+    }, []);
+
+
     useImperativeHandle(
       ref,
       () => ({
@@ -560,9 +561,11 @@ const Video = forwardRef<VideoRef, ReactVideoProps>(
         setVolume,
         getCurrentPosition,
         setFullScreen,
+        getCurrentFrame
       }),
       [
         seek,
+        getCurrentFrame,
         presentFullscreenPlayer,
         dismissFullscreenPlayer,
         save,
@@ -574,37 +577,6 @@ const Video = forwardRef<VideoRef, ReactVideoProps>(
         setFullScreen,
       ],
     );
-
-    const _viewType = useMemo(() => {
-      const hasValidDrmProp =
-        drm !== undefined && Object.keys(drm).length !== 0;
-
-      const shallForceViewType =
-        hasValidDrmProp && (viewType === ViewType.TEXTURE || useTextureView);
-
-      if (shallForceViewType) {
-        console.warn(
-          'cannot use DRM on texture view. please set useTextureView={false}',
-        );
-      }
-      if (useSecureView && useTextureView) {
-        console.warn(
-          'cannot use SecureView on texture view. please set useTextureView={false}',
-        );
-      }
-
-      return shallForceViewType
-        ? useSecureView
-          ? ViewType.SURFACE_SECURE
-          : ViewType.SURFACE // check if we should force the type to Surface due to DRM
-        : viewType
-        ? viewType // else use ViewType from source
-        : useSecureView // else infer view type from useSecureView and useTextureView
-        ? ViewType.SURFACE_SECURE
-        : useTextureView
-        ? ViewType.TEXTURE
-        : ViewType.SURFACE;
-    }, [drm, useSecureView, useTextureView, viewType]);
 
     return (
       <View style={style}>
@@ -686,7 +658,6 @@ const Video = forwardRef<VideoRef, ReactVideoProps>(
           onControlsVisibilityChange={
             onControlsVisibilityChange ? _onControlsVisibilityChange : undefined
           }
-          viewType={_viewType}
         />
         {hasPoster && showPoster ? (
           <Image style={posterStyle} source={{uri: poster}} />

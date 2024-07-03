@@ -16,6 +16,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.graphics.Bitmap;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Build;
@@ -24,6 +25,8 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
 import android.text.TextUtils;
+import android.util.Base64;
+import android.view.TextureView;
 import android.view.View;
 import android.view.Window;
 import android.view.accessibility.CaptioningManager;
@@ -123,18 +126,20 @@ import com.brentvatne.common.react.VideoEventEmitter;
 import com.brentvatne.common.toolbox.DebugLog;
 import com.brentvatne.react.BuildConfig;
 import com.brentvatne.react.R;
-import com.brentvatne.react.ReactNativeVideoManager;
 import com.brentvatne.receiver.AudioBecomingNoisyReceiver;
 import com.brentvatne.receiver.BecomingNoisyListener;
+import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.LifecycleEventListener;
 import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.UiThreadUtil;
+import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.uimanager.ThemedReactContext;
 import com.google.ads.interactivemedia.v3.api.AdError;
 import com.google.ads.interactivemedia.v3.api.AdEvent;
 import com.google.ads.interactivemedia.v3.api.AdErrorEvent;
 import com.google.common.collect.ImmutableList;
 
+import java.io.ByteArrayOutputStream;
 import java.net.CookieHandler;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
@@ -259,9 +264,6 @@ public class ReactExoplayerView extends FrameLayout implements
     private long lastDuration = -1;
 
     private boolean viewHasDropped = false;
-
-    private String instanceId = String.valueOf(UUID.randomUUID());
-
     private void updateProgress() {
         if (player != null) {
             if (playerControlView != null && isPlayingAd() && controls) {
@@ -589,10 +591,6 @@ public class ReactExoplayerView extends FrameLayout implements
         }
     }
 
-    public void setViewType(int viewType) {
-        exoPlayerView.updateSurfaceView(viewType);
-    }
-
     private class RNVLoadControl extends DefaultLoadControl {
         private final int availableHeapInBytes;
         private final Runtime runtime;
@@ -726,6 +724,37 @@ public class ReactExoplayerView extends FrameLayout implements
         }
     }
 
+    public void getCurrentFrame(Promise promise) {
+            WritableMap resultMap = Arguments.createMap();
+           
+        if (player != null) {
+
+            if (exoPlayerView.surfaceView instanceof TextureView) {
+                    Bitmap bitmap = ((TextureView) exoPlayerView.surfaceView).getBitmap();
+                    if(bitmap == null) {
+                         resultMap.putString("base64", "");
+                    }else{
+                    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 70, outputStream);
+
+                    final String base64Image =  Base64.encodeToString(outputStream.toByteArray(), Base64.DEFAULT);
+
+                    resultMap.putString("base64", base64Image);
+                    }
+
+                   
+                    promise.resolve(resultMap);
+            } else {
+                    resultMap.putString("base64", "");
+
+                    promise.resolve(resultMap);
+            }
+        } else {
+            resultMap.putString("image", "");
+            promise.resolve(resultMap);
+        }
+    }
+
     private void initializePlayerCore(ReactExoplayerView self) {
         ExoTrackSelection.Factory videoTrackSelectionFactory = new AdaptiveTrackSelection.Factory();
         self.trackSelector = new DefaultTrackSelector(getContext(), videoTrackSelectionFactory);
@@ -764,7 +793,6 @@ public class ReactExoplayerView extends FrameLayout implements
                 .setLoadControl(loadControl)
                 .setMediaSourceFactory(mediaSourceFactory)
                 .build();
-        ReactNativeVideoManager.Companion.getInstance().onInstanceCreated(instanceId, player);
         refreshDebugState();
         player.addListener(self);
         player.setVolume(muted ? 0.f : audioVolume * 1);
@@ -1159,7 +1187,6 @@ public class ReactExoplayerView extends FrameLayout implements
             player.removeListener(this);
             trackSelector = null;
 
-            ReactNativeVideoManager.Companion.getInstance().onInstanceRemoved(instanceId, player);
             player = null;
         }
 
@@ -2245,6 +2272,15 @@ public class ReactExoplayerView extends FrameLayout implements
         }
         // need to be done at the end to avoid hiding fullscreen control button when fullScreenPlayerView is shown
         updateFullScreenButtonVisibility();
+    }
+
+    public void setUseTextureView(boolean useTextureView) {
+        boolean finallyUseTextureView = useTextureView && drmProps == null;
+        exoPlayerView.setUseTextureView(finallyUseTextureView);
+    }
+
+    public void useSecureView(boolean useSecureView) {
+        exoPlayerView.useSecureView(useSecureView);
     }
 
     public void setHideShutterView(boolean hideShutterView) {

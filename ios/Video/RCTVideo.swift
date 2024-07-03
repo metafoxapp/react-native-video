@@ -13,6 +13,7 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
     private var _playerItem: AVPlayerItem?
     private var _source: VideoSource?
     private var _playerLayer: AVPlayerLayer?
+    private var _playerOutput:AVPlayerItemVideoOutput?
     private var _chapters: [Chapter]?
 
     private var _playerViewController: RCTVideoPlayerViewController?
@@ -57,6 +58,7 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
     private var _ignoreSilentSwitch: String! = "inherit" // inherit, ignore, obey
     private var _mixWithOthers: String! = "inherit" // inherit, mix, duck
     private var _resizeMode: String! = "cover"
+    private var _frameQuality:Float = 0
     private var _fullscreen = false
     private var _fullscreenAutorotate = true
     private var _fullscreenOrientation: String! = "all"
@@ -80,8 +82,6 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
             #endif
         }
     }
-
-    private let instanceId = UUID().uuidString
 
     private var _isBuffering = false {
         didSet {
@@ -186,7 +186,6 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
 
     init(eventDispatcher: RCTEventDispatcher!) {
         super.init(frame: CGRect(x: 0, y: 0, width: 100, height: 100))
-        ReactNativeVideoManager.shared.registerView(newInstance: self)
         #if USE_GOOGLE_IMA
             _imaAdsManager = RCTIMAAdsManager(video: self, pipEnabled: isPipEnabled)
         #endif
@@ -243,6 +242,9 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
     }
 
     required init?(coder aDecoder: NSCoder) {
+        
+        self._playerOutput = AVPlayerItemVideoOutput(outputSettings: ["\(kCVPixelBufferPixelFormatTypeKey)": kCVPixelFormatType_32BGRA])
+        
         super.init(coder: aDecoder)
         #if USE_GOOGLE_IMA
             _imaAdsManager = RCTIMAAdsManager(video: self, pipEnabled: isPipEnabled)
@@ -266,7 +268,6 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
         #if os(iOS)
             _pip = nil
         #endif
-        ReactNativeVideoManager.shared.unregisterView(newInstance: self)
     }
 
     // MARK: - App lifecycle handlers
@@ -456,18 +457,26 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
 
         _player?.pause()
         _playerItem = playerItem
+        if( self._playerOutput != nil){
+            _playerItem?.add(self._playerOutput!);
+        } else {
+            self._playerOutput = AVPlayerItemVideoOutput(outputSettings: ["\(kCVPixelBufferPixelFormatTypeKey)": kCVPixelFormatType_32BGRA])
+            _playerItem?.add(self._playerOutput!);
+        }
+        
+        
+       
         _playerObserver.playerItem = _playerItem
         setPreferredForwardBufferDuration(_preferredForwardBufferDuration)
         setPlaybackRange(playerItem, withCropStart: _source?.cropStart, withCropEnd: _source?.cropEnd)
         setFilter(_filterName)
+        
         if let maxBitRate = _maxBitRate {
             _playerItem?.preferredPeakBitRate = Double(maxBitRate)
         }
 
         if _player == nil {
             _player = AVPlayer()
-            ReactNativeVideoManager.shared.onInstanceCreated(id: instanceId, player: _player)
-
             _player!.replaceCurrentItem(with: playerItem)
 
             if _showNotificationControls {
@@ -1267,7 +1276,6 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
         _selectedAudioTrackCriteria = nil
         _presentingViewController = nil
 
-        ReactNativeVideoManager.shared.onInstanceRemoved(id: instanceId, player: _player)
         _player = nil
         _resouceLoaderDelegate = nil
         _playerObserver.clearPlayer()
@@ -1655,6 +1663,50 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
             resolve(currentTime)
         } else {
             reject("PLAYER_NOT_AVAILABLE", "Player is not initialized.", nil)
+        }
+    }
+    
+    func base64StringFromFixelBuffer(_pixelBuffer: CVPixelBuffer)-> String? {
+        let ciImage = CIImage(cvPixelBuffer: _pixelBuffer)
+        let context = CIContext();
+        
+        guard let cgImage = context.createCGImage(ciImage, from: ciImage.extent) else {
+            return nil
+        }
+        
+        // Convert CGImage to UIImage
+          let image = UIImage(cgImage: cgImage)
+          
+          // Convert UIImage to Data (JPEG representation)
+          guard let imageData = image.jpegData(compressionQuality: 0.6) else {
+              return nil
+          }
+          
+          // Convert Data to base64 string
+          let base64String = imageData.base64EncodedString(options: [])
+          
+          return base64String
+    }
+    
+    @objc
+    func getCurrentFrame(resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
+        guard let player = self._player, let playerItem = player.currentItem else {
+            resolve(["base64": ""])
+            return
+        }
+
+        if playerItem.duration.seconds > 0 && player.timeControlStatus == .playing {
+            if let pixelBuffer = self._playerOutput?.copyPixelBuffer(forItemTime: playerItem.currentTime(), itemTimeForDisplay: nil) {
+                if let base64Image = base64StringFromFixelBuffer(_pixelBuffer:pixelBuffer) {
+                    resolve(["base64": base64Image])
+                } else {
+                    resolve(["base64": ""])
+                }
+            } else {
+                resolve(["base64": ""])
+            }
+        } else {
+            resolve(["base64": ""])
         }
     }
 
