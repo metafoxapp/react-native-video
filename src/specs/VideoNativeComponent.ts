@@ -395,6 +395,7 @@ export interface VideoManagerType {
   ) => Promise<void>;
   setVolume: (volume: number, reactTag: number) => Promise<void>;
   getCurrentPosition: (reactTag: number) => Promise<number>;
+  getCurrentFrame: (reactTag: number) => Promise<{base64?: string}>;
   setFullScreen: (fullScreen: boolean, reactTag: number) => Promise<void>;
 }
 

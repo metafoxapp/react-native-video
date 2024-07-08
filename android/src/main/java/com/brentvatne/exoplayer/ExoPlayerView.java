@@ -34,7 +34,7 @@ import java.util.List;
 
 public final class ExoPlayerView extends FrameLayout implements AdViewProvider {
     private final static String TAG = "ExoPlayerView";
-    private View surfaceView;
+    public View surfaceView;
     private final View shutterView;
     private final SubtitleView subtitleLayout;
     private final AspectRatioFrameLayout layout;
