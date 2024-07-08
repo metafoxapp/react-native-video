@@ -389,6 +389,45 @@ export interface VideoNativeProps extends ViewProps {
 }
 
 type NativeVideoComponentType = HostComponent<VideoNativeProps>;
+// export type VideoComponentType = HostComponent<VideoNativeProps>;
+
+// export type VideoSaveData = {
+//   uri: string;
+// };
+
+// export interface VideoManagerType {
+//   save: (option: object, reactTag: number) => Promise<VideoSaveData>;
+//   seek: (option: Seek, reactTag: number) => Promise<void>;
+//   setPlayerPauseState: (paused: boolean, reactTag: number) => Promise<void>;
+//   setLicenseResult: (
+//     result: string,
+//     licenseUrl: string,
+//     reactTag: number,
+//   ) => Promise<void>;
+//   setLicenseResultError: (
+//     error: string,
+//     licenseUrl: string,
+//     reactTag: number,
+//   ) => Promise<void>;
+//   setVolume: (volume: number, reactTag: number) => Promise<void>;
+//   getCurrentPosition: (reactTag: number) => Promise<number>;
+//   getCurrentFrame: (reactTag: number) => Promise<{base64?: string}>;
+//   setFullScreen: (fullScreen: boolean, reactTag: number) => Promise<void>;
+// }
+
+// export interface VideoDecoderPropertiesType {
+//   getWidevineLevel: () => Promise<number>;
+//   isCodecSupported: (
+//     mimeType: string,
+//     width: number,
+//     height: number,
+//   ) => Promise<'unsupported' | 'hardware' | 'software'>;
+//   isHEVCSupported: () => Promise<'unsupported' | 'hardware' | 'software'>;
+// }
+
+// export const VideoManager = NativeModules.VideoManager as VideoManagerType;
+// export const VideoDecoderProperties =
+//   NativeModules.VideoDecoderProperties as VideoDecoderPropertiesType;
 
 export default requireNativeComponent<VideoNativeProps>(
   'RCTVideo',

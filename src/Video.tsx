@@ -47,6 +47,7 @@ import {
 import NativeVideoManager from './specs/NativeVideoManager';
 import type {VideoSaveData} from './specs/NativeVideoManager';
 import {CmcdMode, ViewType} from './types';
+// import {VideoManager} from './specs/VideoNativeComponent';
 import type {
   OnLoadData,
   OnTextTracksData,
@@ -615,6 +616,11 @@ const Video = forwardRef<VideoRef, ReactVideoProps>(
       [selectedDrm, usingExternalGetLicense],
     );
 
+    const getCurrentFrame = useCallback(() => {
+      return VideoManager.getCurrentFrame(getReactTag(nativeRef));
+    }, []);
+
+
     useImperativeHandle(
       ref,
       () => ({
@@ -628,9 +634,11 @@ const Video = forwardRef<VideoRef, ReactVideoProps>(
         setVolume,
         getCurrentPosition,
         setFullScreen,
+        getCurrentFrame
       }),
       [
         seek,
+        getCurrentFrame,
         presentFullscreenPlayer,
         dismissFullscreenPlayer,
         save,
@@ -831,7 +839,6 @@ const Video = forwardRef<VideoRef, ReactVideoProps>(
           onControlsVisibilityChange={
             onControlsVisibilityChange ? _onControlsVisibilityChange : undefined
           }
-          viewType={_viewType}
         />
         {_renderPoster()}
       </View>
