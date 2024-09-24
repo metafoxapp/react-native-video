@@ -46,7 +46,7 @@ import {
 } from './utils';
 import NativeVideoManager from './specs/NativeVideoManager';
 import type {VideoSaveData} from './specs/NativeVideoManager';
-import {CmcdMode} from './types';
+import {CmcdMode, ViewType} from './types';
 // import {VideoManager} from './specs/VideoNativeComponent';
 import type {
   OnLoadData,
@@ -728,6 +728,41 @@ const Video = forwardRef<VideoRef, ReactVideoProps>(
       [showPoster],
     );
 
+    const _viewType = useMemo(() => {
+      const hasValidDrmProp =
+        drm !== undefined && Object.keys(drm).length !== 0;
+
+      const shallForceViewType =
+        hasValidDrmProp && (viewType === ViewType.TEXTURE || useTextureView);
+
+      if (useSecureView && useTextureView) {
+        console.warn(
+          'cannot use SecureView on texture view. please set useTextureView={false}',
+        );
+      }
+
+      if (shallForceViewType) {
+        console.warn(
+          'cannot use DRM on texture view. please set useTextureView={false}',
+        );
+        return useSecureView ? ViewType.SURFACE_SECURE : ViewType.SURFACE;
+      }
+
+      if (viewType !== undefined && viewType !== null) {
+        return viewType;
+      }
+
+      if (useSecureView) {
+        return ViewType.SURFACE_SECURE;
+      }
+
+      if (useTextureView) {
+        return ViewType.TEXTURE;
+      }
+
+      return ViewType.SURFACE;
+    }, [drm, useSecureView, useTextureView, viewType]);
+
     return (
       <View style={style}>
         <NativeVideoComponent
@@ -735,6 +770,7 @@ const Video = forwardRef<VideoRef, ReactVideoProps>(
           {...rest}
           src={src}
           style={_style}
+         
           resizeMode={resizeMode}
           restoreUserInterfaceForPIPStopCompletionHandler={
             _restoreUserInterfaceForPIPStopCompletionHandler
@@ -806,6 +842,7 @@ const Video = forwardRef<VideoRef, ReactVideoProps>(
           onControlsVisibilityChange={
             onControlsVisibilityChange ? _onControlsVisibilityChange : undefined
           }
+          viewType={_viewType}
         />
         {_renderPoster()}
       </View>
