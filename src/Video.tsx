@@ -395,6 +395,11 @@ const Video = forwardRef<VideoRef, ReactVideoProps>(
       return NativeVideoManager.getCurrentPosition(getReactTag(nativeRef));
     }, []);
 
+
+    const getCurrentFrame = useCallback(() => {
+      return NativeVideoManager.getCurrentFrame(getReactTag(nativeRef));
+    }, []);
+
     const restoreUserInterfaceForPictureInPictureStopCompleted = useCallback(
       (restored: boolean) => {
         setRestoreUserInterfaceForPIPStopCompletionHandler(restored);
@@ -616,9 +621,6 @@ const Video = forwardRef<VideoRef, ReactVideoProps>(
       [selectedDrm, usingExternalGetLicense],
     );
 
-    const getCurrentFrame = useCallback(() => {
-      return VideoManager.getCurrentFrame(getReactTag(nativeRef));
-    }, []);
 
 
     useImperativeHandle(
