@@ -653,41 +653,6 @@ const Video = forwardRef<VideoRef, ReactVideoProps>(
       ],
     );
 
-    const _viewType = useMemo(() => {
-      const hasValidDrmProp =
-        drm !== undefined && Object.keys(drm).length !== 0;
-
-      const shallForceViewType =
-        hasValidDrmProp && (viewType === ViewType.TEXTURE || useTextureView);
-
-      if (useSecureView && useTextureView) {
-        console.warn(
-          'cannot use SecureView on texture view. please set useTextureView={false}',
-        );
-      }
-
-      if (shallForceViewType) {
-        console.warn(
-          'cannot use DRM on texture view. please set useTextureView={false}',
-        );
-        return useSecureView ? ViewType.SURFACE_SECURE : ViewType.SURFACE;
-      }
-
-      if (viewType !== undefined && viewType !== null) {
-        return viewType;
-      }
-
-      if (useSecureView) {
-        return ViewType.SURFACE_SECURE;
-      }
-
-      if (useTextureView) {
-        return ViewType.TEXTURE;
-      }
-
-      return ViewType.SURFACE;
-    }, [drm, useSecureView, useTextureView, viewType]);
-
     const _renderPoster = useCallback(() => {
       if (!hasPoster || !showPoster) {
         return null;
