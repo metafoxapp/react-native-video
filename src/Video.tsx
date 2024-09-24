@@ -46,7 +46,7 @@ import {
 } from './utils';
 import NativeVideoManager from './specs/NativeVideoManager';
 import type {VideoSaveData} from './specs/NativeVideoManager';
-import {CmcdMode, ViewType} from './types';
+import {CmcdMode} from './types';
 // import {VideoManager} from './specs/VideoNativeComponent';
 import type {
   OnLoadData,
